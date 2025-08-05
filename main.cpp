@@ -118,20 +118,20 @@ void segundaCena(){
   
 }
 
-float tempoTransicao = 0.0f; // varia de 0.0 (dia) até 1.0 (noite)
-bool indoParaNoite = true;   // direção da transição
+float tempoTransicao = 0.0f;
+bool indoParaNoite = true;   
 bool saida = false;
 
 void animarSubidaCarro(int value) {
-  carroPosY += 0.01f;  // velocidade da translação
+  carroPosY += 0.01f;  
 
   if (carroPosY >= 10.0f) {
-    carroPosY = 10.0f;  // limita
-    return;             // para a animação
+    carroPosY = 10.0f;  
+    return;             
   }
 
-  glutPostRedisplay();                  // redesenha
-  glutTimerFunc(16, animarSubidaCarro, 0);  // chama de novo em ~16 ms (~60 FPS)
+  glutPostRedisplay();       
+  glutTimerFunc(16, animarSubidaCarro, 0);  
 }
 
 bool animacaoNoiteIniciada = false;
@@ -140,7 +140,7 @@ void terceiraCena(){
   
   if (tempoTransicao >= 1.0f) {
     if(cenaAtual == 4){
-      glutTimerFunc(5000, animarSubidaCarro, 0); // começa a animação
+      glutTimerFunc(5000, animarSubidaCarro, 0); 
       }
     }
   }
@@ -552,10 +552,6 @@ void draw() {
     glLoadIdentity();
     gluPerspective(45, 1, 0.1, 100);
 
-    
-  //quarta e segunda cena = 3, 3, 3
-  //primeira e terceira cena = -15, 0, 3
-  //quinta cena = -5, -10, 4, -5, 0, 0
   switch (cenaAtual) {
     case 0:
       glutIdleFunc(atualizar);
