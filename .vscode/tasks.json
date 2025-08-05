@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build OpenGL",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "main.cpp",
+                "desenhos.cpp",
+                "-o",
+                "bin/animacao.exe",
+                "-Iinclude",
+                "-Llib",
+                "-lfreeglut",
+                "-lglu32",
+                "-lopengl32",
+                "-lwinmm"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}
