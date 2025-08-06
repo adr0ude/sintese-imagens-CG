@@ -2,17 +2,29 @@
 #include <GL/freeglut.h>
 #include "desenhos.h"
 #include <stdlib.h>
-#include <math.h>
-#include <string.h>
-#include <stdio.h>
 #include <windows.h>
 #include <mmsystem.h>
 
-float carroPosY = -10.0f;
+float carroPosY = -5.0f;
 GLUquadric* quad;
 int cenaAtual = 0;
 int totalCenas = 8;
 int temposCena[] = {6000, 6000, 17000, 6000, 8000, 8000, 7000, 7000}; 
+float tempoTransicao = 0.0f;
+bool indoParaNoite = true;   
+bool saida = false;
+bool animacaoNoiteIniciada = false;
+
+float faixaOffset = 0.0f;
+float velocidade = 0.05f; 
+float aceleracao = 0.001f;        
+float velocidadeMaxima = 0.3f;
+float zigzagX = 0.0f;
+float zigzagDirecao = 1.0f;
+float zigzagVelocidade = 0.05f;
+
+static bool colisaoIniciada = false;
+static bool zigzagIniciado = false;
 
 void configurarCamera(float posX, float posY, float posZ, float dirX, float dirY, float dirZ){
   gluLookAt(posX, posY, posZ, dirX, dirY, dirZ, 0, 0, 1);
@@ -118,10 +130,6 @@ void segundaCena(){
   
 }
 
-float tempoTransicao = 0.0f;
-bool indoParaNoite = true;   
-bool saida = false;
-
 void animarSubidaCarro(int value) {
   carroPosY += 0.01f;  
 
@@ -131,19 +139,19 @@ void animarSubidaCarro(int value) {
   }
 
   glutPostRedisplay();       
-  glutTimerFunc(16, animarSubidaCarro, 0);  
+  glutTimerFunc(16, animarSubidaCarro, 0);
+  
 }
 
-bool animacaoNoiteIniciada = false;
-void terceiraCena(){
+void terceiraEquintaCena(){
   primeiraCena();
-  
+
   if (tempoTransicao >= 1.0f) {
     if(cenaAtual == 4){
       glutTimerFunc(5000, animarSubidaCarro, 0); 
       }
     }
-  }
+ }
 
 void quartaCena(){
   segundaCena();
@@ -165,24 +173,7 @@ void quartaCena(){
   glPopMatrix();
 }
 
-float faixaOffset = 0.0f;
-float velocidade = 0.05f; 
-float aceleracao = 0.001f;        
-float velocidadeMaxima = 0.3f;
-float zigzagX = 0.0f;
-float zigzagDirecao = 1.0f;
-float zigzagVelocidade = 0.05f;
-
-void desenharPostesAnimados() {
-  for (float y = -16.0f + faixaOffset; y < 16.0f; y += 8.0f) {
-    glPushMatrix();
-      glTranslatef(1.0f, y, 0.0f); // X = 4.0 posiciona no lado direito
-      desenharPoste();
-    glPopMatrix();
-  }
-}
-
-void quintaCena(){
+void sextaCena(){
   configurarCamera(-5, -10, 4, -5, 0, 0);
   glPushMatrix();
   glColor3f(0.2, 0.2, 0.2); 
@@ -228,10 +219,15 @@ void quintaCena(){
   }
   glPopMatrix();
   
-  desenharPostesAnimados();
+  for (float y = -16.0f + faixaOffset; y < 16.0f; y += 8.0f) {
+    glPushMatrix();
+      glTranslatef(1.0f, y, 0.0f);
+      desenharPoste();
+    glPopMatrix();
+  }
   
   glPushMatrix();
-    glTranslatef(zigzagX, 0, 0); // Aplica o movimento em zig-zag
+    glTranslatef(zigzagX, 0, 0);
     glScalef(2, 2, 2);
     glTranslatef(-2.5f, 0, 0.700f);
     glRotatef(180, 0, 0, 1);
@@ -239,7 +235,7 @@ void quintaCena(){
   glPopMatrix();
 }
 
-float posYCarro = 10.0f;   // começa longe
+float posYCarro = 10.0f; 
 float velocidadeCarro = 0.05f;
 bool colidiu = false;
 float anguloRotacaoColisao = 0.0f;
@@ -247,24 +243,21 @@ bool efeitoColisaoAtivo = false;
 bool subindo = true;
 
 void desenharRachadurasMuro() {
-  glColor3f(0.1f, 0.1f, 0.1f); // cor das rachaduras (quase preto)
-  glLineWidth(2.0f); // espessura da rachadura
+  glColor3f(0.1f, 0.1f, 0.1f);
+  glLineWidth(2.0f);
 
   glBegin(GL_LINES);
 
-  // Linha 1 (vertical quebrada)
   glVertex3f(0.5f, 0.01f, 1.0f);
   glVertex3f(0.7f, 0.01f, 1.5f);
   glVertex3f(0.7f, 0.01f, 1.5f);
   glVertex3f(0.4f, 0.01f, 2.0f);
 
-  // Linha 2 (horizontal quebrada)
   glVertex3f(-0.5f, 0.01f, 2.0f);
   glVertex3f(0.2f, 0.01f, 2.1f);
   glVertex3f(0.2f, 0.01f, 2.1f);
   glVertex3f(0.6f, 0.01f, 2.2f);
 
-  // Linha 3 (diagonal quebrada)
   glVertex3f(-0.3f, 0.01f, 0.8f);
   glVertex3f(0.0f, 0.01f, 1.1f);
   glVertex3f(0.0f, 0.01f, 1.1f);
@@ -273,28 +266,27 @@ void desenharRachadurasMuro() {
   glEnd();
 }
 
-void sextaCena(){
+void setimaCena(){
   configurarCamera(15, 15, 2, 0, 0, 0);
   int linhas = 10;
   int colunas = 10;
 
-  float larguraTijolo = 1.0f;    // eixo X
-  float alturaTijolo = 0.4f;     // eixo Z
+  float larguraTijolo = 1.0f;
+  float alturaTijolo = 0.4f;
   float espacoHorizontal = 0.05f;
   float espacoVertical = 0.05f;
 
   for (int linha = 0; linha < linhas; linha++) {
-    float z = linha * (alturaTijolo + espacoVertical); // Altura do tijolo
+    float z = linha * (alturaTijolo + espacoVertical);
 
     float deslocamento = (linha % 2 == 0) ? 0.0f : (larguraTijolo / 2.0f);
 
     for (int coluna = -30; coluna < colunas; coluna++) {
       float x = coluna * (larguraTijolo + espacoHorizontal) + deslocamento;
 
-      glColor3f(0.8f, 0.3f, 0.1f); // cor tijolo
+      glColor3f(0.8f, 0.3f, 0.1f);
 
       glBegin(GL_QUADS);
-        // Face frontal do muro (em Y = 0)
       glNormal3f(1, 0, 0);
         glVertex3f(x, 0.0f, z);
         glVertex3f(x + larguraTijolo, 0.0f, z);
@@ -341,9 +333,8 @@ void sextaCena(){
 
   glPushMatrix();
   glScalef(3, 3, 3);
-  //glRotatef(180, 0, 0, 1);
-  glTranslatef(1.5f, posYCarro, 0.425f); // movimento no eixo Y
-  glRotatef(anguloRotacaoColisao, 1, 0, 0); // levanta ou abaixa traseira
+  glTranslatef(1.5f, posYCarro, 0.425f);
+  glRotatef(anguloRotacaoColisao, 1, 0, 0);
   desenharCarro();
   glPopMatrix();
 
@@ -378,31 +369,29 @@ void escreverTextoFinal() {
         }
     };
 
-    // Frase principal
     drawText(260, 500, "Se beber, nao dirija!");
 
-    // Espaço e nomes
     drawText(340, 420, "Alunos");
     drawText(230, 380, "Luis Guilherme Ferreira da Costa");
     drawText(230, 340, "Maria Eduarda Araujo Sales");
     drawText(230, 300, "Pedro Henrique Silveira Gomes Sabi");
 
-    glEnable(GL_LIGHTING); // Reativa iluminação se necessário
+    glEnable(GL_LIGHTING);
 }
 
 void animarEfeitoColisao(int value) {
   if (!efeitoColisaoAtivo) return;
 
   if (subindo) {
-    anguloRotacaoColisao += 1.5f; // Levanta traseira
+    anguloRotacaoColisao += 1.5f; 
     if (anguloRotacaoColisao >= 30.0f) {
       subindo = false;
     }
   } else {
-    anguloRotacaoColisao -= 1.5f; // Volta ao normal
+    anguloRotacaoColisao -= 1.5f;
     if (anguloRotacaoColisao <= 0.0f) {
       anguloRotacaoColisao = 0.0f;
-      efeitoColisaoAtivo = false; // Fim do efeito
+      efeitoColisaoAtivo = false;
       return;
     }
   }
@@ -420,7 +409,7 @@ void animarColisaoComMuro(int value) {
       colidiu = true;
       efeitoColisaoAtivo = true;
       subindo = true;
-      glutTimerFunc(0, animarEfeitoColisao, 0); // inicia o efeito de batida
+      glutTimerFunc(0, animarEfeitoColisao, 0);
     }
 
     glutPostRedisplay();
@@ -431,7 +420,6 @@ void animarColisaoComMuro(int value) {
 void atualizarZigZag(int value) {
     zigzagX += zigzagVelocidade * zigzagDirecao;
 
-    // Inverte a direção ao atingir limite (zig-zag)
     if (zigzagX > 1.0f || zigzagX < -1.0f)
         zigzagDirecao *= -1.0f;
 
@@ -440,18 +428,14 @@ void atualizarZigZag(int value) {
 }
 
 void atualizarAnimacao(int value) {
-    // Aumenta a velocidade com aceleração
     velocidade += aceleracao;
 
-    // Limita a velocidade, se quiser
     if (velocidade > velocidadeMaxima)
         velocidade = velocidadeMaxima;
 
-    // Move as faixas
     faixaOffset -= velocidade;
 
-    // Reinicia o loop da faixa se sair da tela
-    if (faixaOffset < -(1.0f + 1.5f)) // faixaComprimento + espaco
+    if (faixaOffset < -(1.0f + 1.5f))
         faixaOffset = 0.0f;
 
     glutPostRedisplay();
@@ -473,11 +457,18 @@ void atualizarNoite(int valor) {
   glutTimerFunc(16, atualizarNoite, 0);
 }
 
-void atualizar() {
+bool animarChegada = false;
+
+void atualizarPos(int value) {
   carroPosY += 0.01f;
-  if (carroPosY >= 0.0f) carroPosY = 0.0f;
+    if (carroPosY >= 0.0f){ 
+    carroPosY = 0.0f;
+    return;
+    }
+
   glutPostRedisplay(); 
-}
+  glutTimerFunc(4, atualizarPos, 0);
+ };
 
 void configurarLuzAmbiente(float tempoTransicao) {
   GLfloat luz_ambiente[] = {
@@ -542,19 +533,14 @@ void trocarCena(int value) {
   glutTimerFunc(temposCena[cenaAtual], trocarCena, 0);
 }
 
-static bool colisaoIniciada = false;
-static bool zigzagIniciado = false;
-
 void draw() {
     configurarCorDeFundo(tempoTransicao);
-
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(45, 1, 0.1, 100);
 
   switch (cenaAtual) {
     case 0:
-      glutIdleFunc(atualizar);
       primeiraCena();
       break;
     case 1:
@@ -563,9 +549,10 @@ void draw() {
       segundaCena();
       break;
     case 2:
-      terceiraCena(); // transição dia/noite
+      terceiraEquintaCena(); // transição dia/noite
       break;
     case 3:
+      tempoTransicao = 0.0f;
       glClearColor(0.467, 0.0, 0.0, 1.0);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       quartaCena(); // mesa com mais garrafas
@@ -573,15 +560,15 @@ void draw() {
     case 4:
       tempoTransicao = 1.0f;
       glutIdleFunc(NULL);
-      terceiraCena();
+      terceiraEquintaCena();
       break;
     case 5:
       tempoTransicao = 1.0f;
-      quintaCena(); // caminhão na rua
+      sextaCena(); // caminhão na rua
       break;
     case 6:
       tempoTransicao = 1.0f;
-      sextaCena(); // colisão no muro
+      setimaCena(); // colisão no muro
       break;
     case 7:
       glClearColor(0.0, 0.0, 0.0, 1.0); // fundo preto
@@ -589,31 +576,34 @@ void draw() {
       escreverTextoFinal();
       break;
   }
-  
+
+  if(cenaAtual == 0 && !animarChegada){
+    glutTimerFunc(0, atualizarPos, 0);
+    animarChegada = true;
+  }
   if (cenaAtual == 2 && !animacaoNoiteIniciada) {
       glutTimerFunc(0, atualizarNoite, 0);
       animacaoNoiteIniciada = true;
-  }
-  
+  } 
   if (cenaAtual == 6 && !colisaoIniciada) {
     glutTimerFunc(0, animarColisaoComMuro, 0);
     colisaoIniciada = true;
   }
-
   if (cenaAtual == 5 && !zigzagIniciado) {
+    glutTimerFunc(0, atualizarAnimacao, 0);
     glutTimerFunc(0, atualizarZigZag, 0);
     zigzagIniciado = true;
   }
 
-    configurarLuzAmbiente(tempoTransicao);
-    configurarLuzPoste(tempoTransicao);
+  configurarLuzAmbiente(tempoTransicao);
+  configurarLuzPoste(tempoTransicao);
     
-    glutSwapBuffers();
+  glutSwapBuffers();
 }
 
 
 void init() {
-    glClearColor(0.0, 0.7, 1.0, 1.0); // Céu azul claro
+    glClearColor(0.0, 0.7, 1.0, 1.0);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -655,12 +645,10 @@ int main(int argc, char **argv) {
   glutInitWindowPosition(0, 0);
   glutCreateWindow("Trabalho Síntese de Imagens");
   glutDisplayFunc(draw);
-  
-  
-  glutTimerFunc(0, atualizarAnimacao, 0);
   glutTimerFunc(temposCena[0], trocarCena, 0);
   init();
   PlaySoundA("audio-cg.wav", NULL, SND_FILENAME | SND_ASYNC);
   glutMainLoop();
   return 0;
+  
 }
