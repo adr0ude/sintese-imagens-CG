@@ -19,4 +19,4 @@ Foi escolhido o tema 2: Animações Criativas com Narrativas para aplicação do
 ## Como executar
 
 O link abaixo possibilita acessar o projeto desenvolvido no replit:  
-https://replit.com/@MariaEduarda865/Projeto-Computacao-Grafica?v=1
+https://replit.com/@LuisGuilhermeFerreira/Projeto-Computacao-Grafica
